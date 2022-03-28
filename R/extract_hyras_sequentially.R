@@ -40,6 +40,13 @@ stations <- stations |>
 
 
 # Aggregate spatially -----------------------------------------------------
+tictoc::tic()
+hyras_stations <- netcdf_list |> aggregate(by = stations, FUN = mean, na.rm=TRUE)
+tictoc::toc()
+
+
+
+# Aggregated Stars as Sf --------------------------------------------------
 stars_to_sf <- function(stars, stations, time_staps) {
   stars |>
     st_as_sf() |> 
@@ -54,11 +61,6 @@ stars_to_sf <- function(stars, stations, time_staps) {
            precipitation = as.numeric(precipitation)) |> 
     relocate(station_id, date, precipitation)
 }
-
-
-tictoc::tic()
-hyras_stations <- netcdf_list |> aggregate(by = stations, FUN = mean, na.rm=TRUE)
-tictoc::toc()
 
 time_staps <- hyras_stations |> 
   st_get_dimension_values("time") |> 
