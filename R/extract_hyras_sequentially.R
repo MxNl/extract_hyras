@@ -40,7 +40,7 @@ stations <- stations |>
 
 
 # Aggregate spatially -----------------------------------------------------
-stars_to_sf <- function(stars) {
+stars_to_sf <- function(stars, stations, time_staps) {
   stars |>
     st_as_sf() |> 
     set_names(c(time_staps, "geometry")) |> 
@@ -65,7 +65,7 @@ time_staps <- hyras_stations |>
   as.Date() |> 
   as.character()
 
-hyras_stations_df <- hyras_stations |> stars_to_sf()
+hyras_stations_df <- hyras_stations |> stars_to_sf(stations, time_staps)
 
 if (SUBSET_NETCDF & SUBSET_STATIONS) {
 hyras_stations_df |> 
@@ -76,5 +76,6 @@ hyras_stations_df |>
   theme_minimal() +
   facet_wrap(~ date)
 }
+
 
 
