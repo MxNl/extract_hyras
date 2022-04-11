@@ -56,6 +56,7 @@ stations <- stations |>
 # Value Extraction --------------------------------------------------------
 future::plan(multisession, workers = N_CORES)
 
+dir.create("data_export")
 # tictoc::tic()
 hyras_extraction_df <- files_list |> 
   future_map_dfr(extract_hyras, sf_points = stations, .progress = TRUE)
