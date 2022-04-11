@@ -12,30 +12,36 @@ library(raster)
 
 
 # Config ------------------------------------------------------------------
-N_CORES <- 3
-N_STATIONS <- 10
+N_STATIONS <- 1000
 N_DAYS <- 365
 N_YEARS <- 3
+N_CORES <- N_YEARS
 SUBSET_NETCDF <- TRUE
 SUBSET_STATIONS <- TRUE
 
+
+# Source ------------------------------------------------------------------
+"R" |> 
+  list.files(full.names = TRUE) |> 
+  map(source)
 
 
 # Import ------------------------------------------------------------------
 
 ## HYRAS -------------------------------------------------------------------
-path_to_hyras <- "J:/PROJEKTE/FARM/Daten/Klimadaten/hyras_de_dwd/daily"
+# path_to_hyras <- "J:/PROJEKTE/FARM/Daten/Klimadaten/hyras_de_dwd/daily"
+path_to_hyras <- "D:/Data/farm_sw/klimadaten/hyras_de_dwd/daily"
 # path_to_hyras <- "data"
 
 files_list <- list.files(path_to_hyras, pattern = ".nc$", full.names = TRUE)
 
 if(SUBSET_NETCDF) files_list <- files_list |> magrittr::extract(1:N_YEARS)
 
-hyras_brick <- files_list |> 
-  map(brick, varname = "pr") |> 
-  reduce(raster::stack)
+# hyras_brick <- files_list |> 
+#   map(brick, varname = "pr") |> 
+#   reduce(raster::stack)
 
-if(SUBSET_NETCDF) hyras_brick <- hyras_brick |> raster::subset(1:N_DAYS)
+# if(SUBSET_NETCDF) hyras_brick <- hyras_brick |> raster::subset(1:N_DAYS)
 
 # Stations ----------------------------------------------------------------
 load("J:/PROJEKTE/FARM/Daten/Datenanalyse/INVEKOS_metrics/Output/alle_messstellen1000.RData")
@@ -46,33 +52,15 @@ if(SUBSET_STATIONS) stations <- stations |> slice_sample(n = N_STATIONS)
 stations <- stations |>
   st_transform(st_crs(stars::read_stars(files_list[1], proxy = TRUE)))
 
-# stations <- stations |> 
-#   mutate(groups = sort(rep_len(1:N_CORES, nrow(stations)))) |> 
-#   group_by(groups) |> 
-#   group_split()
-# 
-# future::plan(multisession, workers = N_CORES)
-# tictoc::tic()
-# test <- stations |> 
-#   future_map_dfr(~ exact_extract(x = hyras_brick, y = .x, fun = "mean"))
-# tictoc::toc()
-
 
 # Value Extraction --------------------------------------------------------
+future::plan(multisession, workers = N_CORES)
 
-tictoc::tic()
-hyras_extraction_df <- stations |> 
-  # reduce(bind_rows) |> 
-  exact_extract(x = hyras_brick, fun = "mean") |> 
-  as_tibble()
-tictoc::toc()
+# tictoc::tic()
+hyras_extraction_df <- files_list |> 
+  future_map_dfr(extract_hyras, sf_points = stations, .progress = TRUE)
+# tictoc::toc()
 
-hyras_extraction_df <- hyras_extraction_df |> 
-  as_tibble() |> 
-  mutate(station_id = stations$messstellen_id, .before = 1) |> 
-  pivot_longer(-station_id, names_to = "date", values_to = "prec") |> 
-  mutate(date = str_remove(date, "mean.X")) |> 
-  mutate(date = ymd_hms(date))
 
 
 # Plotting ----------------------------------------------------------------
