@@ -6,6 +6,7 @@ library(furrr)
 library(lubridate)
 library(stringr)
 library(tidyr)
+library(ncdf4)
 library(ggplot2)
 library(raster)
 
@@ -19,10 +20,12 @@ SUBSET_NETCDF <- TRUE
 SUBSET_STATIONS <- TRUE
 
 
+
 # Import ------------------------------------------------------------------
 
 ## HYRAS -------------------------------------------------------------------
 path_to_hyras <- "J:/PROJEKTE/FARM/Daten/Klimadaten/hyras_de_dwd/daily"
+# path_to_hyras <- "data"
 
 files_list <- list.files(path_to_hyras, pattern = ".nc$", full.names = TRUE)
 
@@ -91,7 +94,14 @@ if (SUBSET_NETCDF & SUBSET_STATIONS & (N_DAYS <= 10)) {
 
 if (SUBSET_NETCDF & SUBSET_STATIONS & (N_STATIONS <= 10)) {
   hyras_extraction_df |> 
-    as_tibble() |> 
+    inner_join(stations, by = c("station_id" ="messstellen_id" )) |> 
+    st_as_sf() |> 
+    st_transform(st_crs(alle_messstellen_1000)) |> 
+    st_centroid() %>%
+    mutate(x = st_coordinates(.)[1],
+           y = st_coordinates(.)[2]) |>
+    st_drop_geometry() |> 
+    arrange(-y, x) |> 
     ggplot(aes(date, prec)) +
     geom_col(aes(fill = prec)) +
     scale_fill_viridis_c() +
