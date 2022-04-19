@@ -15,9 +15,8 @@ library(raster)
 N_STATIONS <- 1000
 N_DAYS <- 365
 N_YEARS <- 3
-N_CORES <- N_YEARS
-SUBSET_NETCDF <- TRUE
-SUBSET_STATIONS <- TRUE
+SUBSET_NETCDF <- FALSE
+SUBSET_STATIONS <- FALSE
 
 
 # Source ------------------------------------------------------------------
@@ -34,6 +33,7 @@ path_to_hyras <- "D:/Data/farm_sw/klimadaten/hyras_de_dwd/daily"
 # path_to_hyras <- "data"
 
 files_list <- list.files(path_to_hyras, pattern = ".nc$", full.names = TRUE)
+N_CORES <- files_list |> length()
 
 if(SUBSET_NETCDF) files_list <- files_list |> magrittr::extract(1:N_YEARS)
 
